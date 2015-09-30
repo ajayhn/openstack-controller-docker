@@ -44,9 +44,6 @@ RUN apt-get -y install nova-api nova-cert nova-conductor nova-consoleauth \
     nova-novncproxy nova-scheduler python-novaclient \
     && rm -f /var/lib/nova/nova.sqlite
 
-# Neutron
-RUN apt-get -y install neutron-server neutron-plugin-ml2 python-neutronclient
-
 # Horizone
 RUN apt-get -y install openstack-dashboard \
        && dpkg --purge openstack-dashboard-ubuntu-theme
@@ -58,7 +55,7 @@ RUN apt-get update && apt-get -y install heat-api heat-api-cfn heat-engine pytho
 RUN apt-get -y install cinder-api cinder-scheduler python-cinderclient
 
 # MySQL Data Volume
-VOLUME ["/data"]
+#VOLUME ["/data"]
 
 # MySQL
 COPY config/mysql/my.cnf /etc/mysql/my.cnf
@@ -76,10 +73,6 @@ COPY config/glance/glance-registry.conf /etc/glance/glance-registry.conf
 # Configuration File for Nova Service
 COPY config/nova/nova.conf /etc/nova/nova.conf
 
-# Configuration File for Neutron Service
-COPY config/neutron/neutron.conf /etc/neutron/neutron.conf
-COPY config/neutron/ml2_conf.ini /etc/neutron/plugins/ml2/ml2_conf.ini
-
 # Configuration File for Heat Service
 COPY config/heat/heat.conf /etc/heat/heat.conf
 
@@ -92,8 +85,6 @@ COPY config/cinder/cinder.conf /etc/cinder/cinder.conf
 RUN chown glance:glance /etc/glance/glance-api.conf \
   && chown glance:glance /etc/glance/glance-registry.conf \
   && chown nova:nova /etc/nova/nova.conf \
-  && chown root:neutron /etc/neutron/neutron.conf \
-  && chown root:neutron /etc/neutron/plugins/ml2/ml2_conf.ini \
   && chown cinder:cinder /etc/cinder/cinder.conf
 
 COPY entrypoint.sh /entrypoint.sh

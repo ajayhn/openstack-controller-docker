@@ -1,5 +1,6 @@
 #!/bin/bash
 
+MYIPADDR=$(hostname -i)
 # Setup for MySQL
 # Remove mysql directory
 if [ -d /data/mysql ]; then
@@ -34,11 +35,6 @@ if [ "$NOVA_DBPASS" ]; then
     echo "CREATE DATABASE IF NOT EXISTS \`nova\` ;" >> "$tempSqlFile"
     echo "GRANT ALL ON \`nova\`.* TO 'nova'@'%' IDENTIFIED BY '$NOVA_DBPASS';" >> "$tempSqlFile"
 fi
-if [ "$NEUTRON_DBPASS" ]; then
-    echo "CREATE USER 'neutron'@'%' IDENTIFIED BY '$NEUTRON_DBPASS' ;" >> "$tempSqlFile"
-    echo "CREATE DATABASE IF NOT EXISTS \`neutron\` ;" >> "$tempSqlFile"
-    echo "GRANT ALL ON \`neutron\`.* TO 'neutron'@'%' IDENTIFIED BY '$NEUTRON_DBPASS';" >> "$tempSqlFile"
-fi
 if [ "$CINDER_DBPASS" ]; then
     echo "CREATE USER 'cinder'@'%' IDENTIFIED BY '$CINDER_DBPASS' ;" >> "$tempSqlFile"
     echo "CREATE DATABASE IF NOT EXISTS \`cinder\` ;" >> "$tempSqlFile"
@@ -59,14 +55,15 @@ echo 'Rabbitmq-server Setup....................'
 service rabbitmq-server start
 
 # Add User & Change password for Rabbitmq Server
-while true; do
-    if [ "$RABBIT_PASS" ]; then
-        rabbitmqctl add_user openstack $RABBIT_PASS
-        if [ $? == 0 ]; then break
-        else echo "Waiting for RabbitMQ Server Password change....";sleep 1
-        fi
-    fi
-done
+rabbitmqctl add_user openstack $RABBIT_PASS
+#while true; do
+#    if [ "$RABBIT_PASS" ]; then
+#        rabbitmqctl add_user openstack $RABBIT_PASS
+#        if [ $? == 0 ]; then break
+#        else echo "Waiting for RabbitMQ Server Password change....";sleep 1
+#        fi
+#    fi
+#done
 rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 
 # Keystone Setup
@@ -120,7 +117,7 @@ NOVA_CONF=/etc/nova/nova.conf
 sed -i "s/NOVA_DBPASS/$NOVA_DBPASS/g" $NOVA_CONF
 sed -i "s/NOVA_PASS/$NOVA_PASS/g" $NOVA_CONF
 sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $NOVA_CONF
-sed -i "s/MYIPADDR/$MYIPADDR/g" $NOVA_CONF
+sed -i "s/MYIPADDR/${MYIPADDR}/g" $NOVA_CONF
 sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $NOVA_CONF
 sed -i "s/NEUTRON_PASS/$NEUTRON_PASS/g" $NOVA_CONF
 
@@ -134,64 +131,32 @@ su -s /bin/sh -c "nova-scheduler --config-file=$NOVA_CONF &" nova
 su -s /bin/sh -c "nova-conductor --config-file=$NOVA_CONF &" nova
 su -s /bin/sh -c "nova-novncproxy --config-file=$NOVA_CONF &" nova
 
-## Heat
-echo 'Heat Setup.........................'
-HEAT_CONF=/etc/heat/heat.conf
-sed -i "s/HEAT_DOMAIN_PASS/$HEAT_DOMAIN_PASS/g" $HEAT_CONF
-sed -i "s/HEAT_DBPASS/$HEAT_DBPASS/g" $HEAT_CONF
-sed -i "s/HEAT_PASS/$HEAT_PASS/g" $HEAT_CONF
-sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $HEAT_CONF
-sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $HEAT_CONF
-
-su -s /bin/sh -c "heat-manage db_sync" heat
-service heat-api start
-service heat-api-cfn start
-service heat-engine start
-
-## Cinder
-echo 'Cinder Setup.........................'
-CINDER_CONF=/etc/cinder/cinder.conf
-sed -i "s/CINDER_PASS/$CINDER_PASS/g" $CINDER_CONF
-sed -i "s/CINDER_DBPASS/$CINDER_DBPASS/g" $CINDER_CONF
-sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $CINDER_CONF
-sed -i "s/MYIPADDR/$MYIPADDR/g" $CINDER_CONF
-sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $CINDER_CONF
-
-su -s /bin/sh -c "cinder-manage db sync" cinder
-service cinder-scheduler start 
-service cinder-api start
-
-## Neutron Setup
-echo 'Neutron Setup.......................'
-NEUTRON_CONF=/etc/neutron/neutron.conf
-ML2_CONF=/etc/neutron/plugins/ml2/ml2_conf.ini
-
-sed -i "s/NEUTRON_DBPASS/$NEUTRON_DBPASS/g" $NEUTRON_CONF
-sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $NEUTRON_CONF
-sed -i "s/NEUTRON_PASS/$NEUTRON_PASS/g" $NEUTRON_CONF
-sed -i "s/NOVA_PASS/$NOVA_PASS/g" $NEUTRON_CONF
-sed -i "s/REGION_NAME/$REGION_NAME/g" $NEUTRON_CONF
-sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $NEUTRON_CONF
-
-############################################################################
-# DVR Setup / L3 HA
-if [ $HA_MODE == "DVR" ]; then
-    sed -i "s/^# router_distributed.*/router_distributed = True/" $NEUTRON_CONF
-fi
-
-# L3 HA Setup
-if [ $HA_MODE == "L3_HA" ]; then
-    sed -i "s/^# router_distributed.*/router_distributed = False/" $NEUTRON_CONF
-    sed -i "s/^# l3_ha = False.*/l3_ha = True/" $NEUTRON_CONF
-    sed -i "s/^# max_l3_agents_per_router.*/max_l3_agents_per_router = 0/" $NEUTRON_CONF
-fi
-
-# L3 Agent Failover
-sed -i "s/^# allow_automatic_l3agent_failover.*/allow_automatic_l3agent_failover = True/" $NEUTRON_CONF
-############################################################################
-
-su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf \
-  --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
-
-echo 'Neutron Service Starting......'
-su -s /bin/sh -c "neutron-server --config-file $NEUTRON_CONF --config-file $ML2_CONF" neutron
+while true; do
+    sleep 10
+done
+### Heat
+#echo 'Heat Setup.........................'
+#HEAT_CONF=/etc/heat/heat.conf
+#sed -i "s/HEAT_DOMAIN_PASS/$HEAT_DOMAIN_PASS/g" $HEAT_CONF
+#sed -i "s/HEAT_DBPASS/$HEAT_DBPASS/g" $HEAT_CONF
+#sed -i "s/HEAT_PASS/$HEAT_PASS/g" $HEAT_CONF
+#sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $HEAT_CONF
+#sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $HEAT_CONF
+#
+#su -s /bin/sh -c "heat-manage db_sync" heat
+#service heat-api start
+#service heat-api-cfn start
+#service heat-engine start
+#
+### Cinder
+#echo 'Cinder Setup.........................'
+#CINDER_CONF=/etc/cinder/cinder.conf
+#sed -i "s/CINDER_PASS/$CINDER_PASS/g" $CINDER_CONF
+#sed -i "s/CINDER_DBPASS/$CINDER_DBPASS/g" $CINDER_CONF
+#sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $CINDER_CONF
+#sed -i "s/MYIPADDR/$MYIPADDR/g" $CINDER_CONF
+#sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $CINDER_CONF
+#
+#su -s /bin/sh -c "cinder-manage db sync" cinder
+#service cinder-scheduler start 
+#service cinder-api start

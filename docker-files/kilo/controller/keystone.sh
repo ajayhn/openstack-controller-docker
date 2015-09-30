@@ -1,7 +1,10 @@
 #!/bin/bash
 
+set -x
+
 export OS_TOKEN=$ADMIN_TOKEN
-export OS_URL=http://controller:35357/v2.0
+export OS_URL=http://openstack:35357/v2.0
+KEYSTONE_VERSION=${KEYSTONE_VERSION:-v2.0}
 
 # For Keystone
 name=`openstack service list | awk '/ identity / {print $2}'`
@@ -13,9 +16,9 @@ fi
 endpoint=`openstack endpoint list | awk '/ identity / {print $2}'`
 if [ -z "$endpoint" ]; then
    openstack endpoint create \
-     --publicurl http://controller:5000/v2.0 \
-     --internalurl http://controller:5000/v2.0 \
-     --adminurl http://controller:35357/v2.0 \
+     --publicurl http://openstack:5000/${KEYSTONE_VERSION} \
+     --internalurl http://openstack:5000/${KEYSTONE_VERSION} \
+     --adminurl http://openstack:35357/${KEYSTONE_VERSION} \
      --region $REGION_NAME \
      identity
 fi
@@ -44,7 +47,23 @@ export OS_PROJECT_NAME=admin
 export OS_TENANT_NAME=admin
 export OS_USERNAME=admin
 export OS_PASSWORD=$ADMIN_PASS
-export OS_AUTH_URL=http://controller:35357/v3
+export OS_ADMIN_TOKEN=$ADMIN_TOKEN
+export OS_AUTH_URL=http://openstack:35357/${KEYSTONE_VERSION}
+export OS_AUTH_URL=http://openstack:35357/${KEYSTONE_VERSION}
+if [ ${KEYSTONE_VERSION} = "v3" ]; then
+    export OS_IDENTITY_API_VERSION=3
+fi
+
+echo "export OS_PROJECT_DOMAIN_ID=default" > /openrc
+echo "export OS_USER_DOMAIN_ID=default" >> /openrc
+echo "export OS_PROJECT_NAME=admin" >> /openrc
+echo "export OS_TENANT_NAME=admin" >> /openrc
+echo "export OS_USERNAME=admin" >> /openrc
+echo "export OS_PASSWORD=$ADMIN_PASS" >> /openrc
+echo "export OS_AUTH_URL=http://openstack:35357/${KEYSTONE_VERSION}" >> /openrc
+if [ ${KEYSTONE_VERSION} = "v3" ]; then
+    echo "export OS_IDENTITY_API_VERSION=3" >> /openrc
+fi
 
 # user / role / endpoint create for Glance Service
 openstack user create --password $GLANCE_PASS glance > /dev/null 2>&1
@@ -57,12 +76,27 @@ fi
 # Endpoint create for glance service
 endpoint=`openstack endpoint list | awk '/ image / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:9292 \
-     --internalurl http://controller:9292 \
-     --adminurl http://controller:9292 \
-     --region $REGION_NAME \
-     image
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          image \
+          public http://openstack:9292 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          image \
+          internal http://openstack:9292 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          image \
+          admin http://openstack:9292 \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:9292 \
+          --internalurl http://openstack:9292 \
+          --adminurl http://openstack:9292 \
+          --region $REGION_NAME \
+          image
+    fi
 fi
 
 # user / role / endpoint create for Nova Service
@@ -76,12 +110,27 @@ fi
 # Endpoint create for nova service
 endpoint=`openstack endpoint list | awk '/ compute / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:8774/v2/%\(tenant_id\)s \
-     --internalurl http://controller:8774/v2/%\(tenant_id\)s \
-     --adminurl http://controller:8774/v2/%\(tenant_id\)s \
-     --region $REGION_NAME \
-     compute
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          compute \
+          public http://openstack:8774/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          compute \
+          internal http://openstack:8774/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          compute \
+          admin http://openstack:8774/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:8774/v2/%\(tenant_id\)s \
+          --internalurl http://openstack:8774/v2/%\(tenant_id\)s \
+          --adminurl http://openstack:8774/v2/%\(tenant_id\)s \
+          --region $REGION_NAME \
+          compute
+    fi
 fi
 
 # user / role / endpoint create for Neutron Service
@@ -95,12 +144,27 @@ fi
 # Endpoint create for neutron service
 endpoint=`openstack endpoint list | awk '/ network / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:9696 \
-     --adminurl http://controller:9696 \
-     --internalurl http://controller:9696 \
-     --region $REGION_NAME \
-     network
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          network \
+          public http://contrail:9696 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          network \
+          internal http://contrail:9696 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          network \
+          admin http://contrail:9696 \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://contrail:9696 \
+          --adminurl http://contrail:9696 \
+          --internalurl http://contrail:9696 \
+          --region $REGION_NAME \
+          network
+    fi
 fi
 
 # user / role / endpoint create for Heat Service
@@ -119,22 +183,52 @@ fi
 # Endpoint create for heat service
 endpoint=`openstack endpoint list | awk '/ orchestration / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:8004/v1/%\(tenant_id\)s  \
-     --internalurl http://controller:8004/v1/%\(tenant_id\)s \
-     --adminurl http://controller:8004/v1/%\(tenant_id\)s  \
-     --region $REGION_NAME \
-     orchestration
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          orchestration \
+          public http://openstack:8004 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          orchestration \
+          internal http://openstack:8004 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          orchestration \
+          admin http://openstack:8004 \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:8004/v1/%\(tenant_id\)s  \
+          --internalurl http://openstack:8004/v1/%\(tenant_id\)s \
+          --adminurl http://openstack:8004/v1/%\(tenant_id\)s  \
+          --region $REGION_NAME \
+          orchestration
+    fi
 fi
 
 endpoint=`openstack endpoint list | awk '/ cloudformation / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:8000/v1  \
-     --internalurl http://controller:8000/v1 \
-     --adminurl http://controller:8000/v1  \
-     --region $REGION_NAME \
-     cloudformation 
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          cloudformation \
+          public http://openstack:8000/v1 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          cloudformation \
+          internal http://openstack:8000/v1 \
+          --region $REGION_NAME
+        openstack endpoint create \
+          cloudformation \
+          admin http://openstack:8000/v1 \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:8000/v1  \
+          --internalurl http://openstack:8000/v1 \
+          --adminurl http://openstack:8000/v1  \
+          --region $REGION_NAME \
+          cloudformation 
+    fi
 fi
 
 
@@ -154,20 +248,50 @@ fi
 # Endpoint create for heat service
 endpoint=`openstack endpoint list | awk '/ volume / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:8776/v2/%\(tenant_id\)s \
-     --internalurl http://controller:8776/v2/%\(tenant_id\)s \
-     --adminurl http://controller:8776/v2/%\(tenant_id\)s \
-     --region $REGION_NAME \
-     volume
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          volume \
+          public http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          volume \
+          internal http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          volume \
+          admin http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --internalurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --adminurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME \
+          volume
+    fi
 fi
 
 endpoint=`openstack endpoint list | awk '/ volumev2 / {print $2}'`
 if [ -z "$endpoint" ]; then
-   openstack endpoint create \
-     --publicurl http://controller:8776/v2/%\(tenant_id\)s \
-     --internalurl http://controller:8776/v2/%\(tenant_id\)s \
-     --adminurl http://controller:8776/v2/%\(tenant_id\)s \
-     --region $REGION_NAME \
-     volumev2 
+    if [ ${KEYSTONE_VERSION} = "v3" ]; then
+        openstack endpoint create \
+          volumev2 \
+          public http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          volumev2 \
+          internal http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+        openstack endpoint create \
+          volumev2 \
+          admin http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME
+    else
+        openstack endpoint create \
+          --publicurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --internalurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --adminurl http://openstack:8776/v2/%\(tenant_id\)s \
+          --region $REGION_NAME \
+          volumev2 
+    fi
 fi
