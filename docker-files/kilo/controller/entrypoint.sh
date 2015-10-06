@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 MYIPADDR=$(hostname -i)
 # Setup for MySQL
@@ -71,6 +72,7 @@ echo 'Keystone Setup....................'
 
 sed -i "s/ADMIN_TOKEN/$ADMIN_TOKEN/g" /etc/keystone/keystone.conf
 sed -i "s/KEYSTONE_DBPASS/$KEYSTONE_DBPASS/g" /etc/keystone/keystone.conf
+sed -i "s#POLICY_FILE#$POLICY_FILE#g" /etc/keystone/keystone.conf
 
 # excution for keystone Service
 su -s /bin/sh -c "keystone-manage db_sync" keystone

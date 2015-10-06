@@ -62,6 +62,7 @@ COPY config/mysql/my.cnf /etc/mysql/my.cnf
 
 # WSGI for Keystone
 COPY config/wsgi-keystone.conf /etc/apache2/sites-available/wsgi-keystone.conf
+COPY config/keystone/policy.v3.json /etc/keystone/policy.v3.json
 
 # Configuration File for Keystone Service
 COPY config/keystone/keystone.conf /etc/keystone/keystone.conf

@@ -40,6 +40,13 @@ openstack role create heat_stack_owner > /dev/null 2>&1
 openstack role add --project demo --user demo heat_stack_owner > /dev/null 2>&1
 openstack role create heat_stack_user > /dev/null 2>&1
 
+# add to policy.v3.json
+if [ ${KEYSTONE_VERSION} = "v3" ]; then
+    admin_id=$(openstack user show admin | grep id | awk '{ print $4 }')
+    sed -i "s/ADMIN_USER_ID/$admin_id/" /etc/keystone/policy.v3.json
+fi
+
+
 unset OS_TOKEN OS_URL
 export OS_PROJECT_DOMAIN_ID=default
 export OS_USER_DOMAIN_ID=default
