@@ -1,5 +1,16 @@
 #!/bin/bash
 set -x
+env
+
+RABBIT_HOST=${RABBIT_HOST:-localhost}
+MYSQL_HOST=${MYSQL_HOST:-localhost}
+NOVA_HOST=${NOVA_HOST:-openstack}
+GLANCE_HOST=${GLANCE_HOST:-openstack}
+KEYSTONE_HOST=${KEYSTONE_HOST:-openstack}
+HEAT_HOST=${HEAT_HOST:-openstack}
+CFN_HOST=${CFN_HOST:-openstack}
+CINDER_HOST=${CINDER_HOST:-openstack}
+NEUTRON_HOST=${NEUTRON_HOST:-contrail}
 
 MYIPADDR=$(hostname -i)
 # Setup for MySQL
@@ -72,6 +83,7 @@ echo 'Keystone Setup....................'
 
 sed -i "s/ADMIN_TOKEN/$ADMIN_TOKEN/g" /etc/keystone/keystone.conf
 sed -i "s/KEYSTONE_DBPASS/$KEYSTONE_DBPASS/g" /etc/keystone/keystone.conf
+sed -i "s/MYSQL_HOST/$MYSQL_HOST/g" /etc/keystone/keystone.conf
 sed -i "s#POLICY_FILE#$POLICY_FILE#g" /etc/keystone/keystone.conf
 
 # excution for keystone Service
@@ -96,10 +108,17 @@ echo 'Glance Setup..................'
 GLANCE_API=/etc/glance/glance-api.conf
 GLANCE_REGISTRY=/etc/glance/glance-registry.conf
 
+sed -i "s/RABBIT_HOST/$RABBIT_HOST/g" $GLANCE_API
+sed -i "s/MYSQL_HOST/$MYSQL_HOST/g" $GLANCE_API
+sed -i "s/KEYSTONE_HOST/$KEYSTONE_HOST/g" $GLANCE_API
 sed -i "s/GLANCE_DBPASS/$GLANCE_DBPASS/g" $GLANCE_API
 sed -i "s/GLANCE_PASS/$GLANCE_PASS/g" $GLANCE_API
 sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $GLANCE_API
 
+sed -i "s/RABBIT_HOST/$RABBIT_HOST/g" $GLANCE_REGISTRY
+sed -i "s/MYSQL_HOST/$MYSQL_HOST/g" $GLANCE_REGISTRY
+sed -i "s/KEYSTONE_HOST/$KEYSTONE_HOST/g" $GLANCE_REGISTRY
+sed -i "s/GLANCE_DBPASS/$GLANCE_DBPASS/g" $GLANCE_REGISTRY
 sed -i "s/GLANCE_DBPASS/$GLANCE_DBPASS/g" $GLANCE_REGISTRY
 sed -i "s/GLANCE_PASS/$GLANCE_PASS/g" $GLANCE_REGISTRY
 sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $GLANCE_REGISTRY
@@ -119,6 +138,9 @@ NOVA_CONF=/etc/nova/nova.conf
 sed -i "s/NOVA_DBPASS/$NOVA_DBPASS/g" $NOVA_CONF
 sed -i "s/NOVA_PASS/$NOVA_PASS/g" $NOVA_CONF
 sed -i "s/RABBIT_PASS/$RABBIT_PASS/g" $NOVA_CONF
+sed -i "s/RABBIT_HOST/$RABBIT_HOST/g" $NOVA_CONF
+sed -i "s/MYSQL_HOST/$MYSQL_HOST/g" $NOVA_CONF
+sed -i "s/KEYSTONE_HOST/$KEYSTONE_HOST/g" $NOVA_CONF
 sed -i "s/MYIPADDR/${MYIPADDR}/g" $NOVA_CONF
 sed -i "s/ADMIN_TENANT_NAME/$ADMIN_TENANT_NAME/g" $NOVA_CONF
 sed -i "s/NEUTRON_PASS/$NEUTRON_PASS/g" $NOVA_CONF
