@@ -2,6 +2,8 @@ FROM ubuntu:14.04
 MAINTAINER Jaewoo Lee <continuse@icloud.com>
 
 ARG DOCKERFILE_URL=./
+ADD ${DOCKERFILE_URL}/config/mysql/my.cnf /etc/mysql/my.cnf
+
 # Mysql Server
 ENV MYSQL_ROOT_PASSWORD openstack
 RUN { \
