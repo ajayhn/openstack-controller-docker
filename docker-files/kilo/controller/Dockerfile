@@ -94,7 +94,9 @@ RUN chown glance:glance /etc/glance/glance-api.conf \
   && chown cinder:cinder /etc/cinder/cinder.conf
 
 ADD ${DOCKERFILE_URL}/entrypoint.sh /entrypoint.sh
+RUN chmod a+x /entrypoint.sh
 ADD ${DOCKERFILE_URL}/keystone.sh /keystone.sh
+RUN chmod a+x /keystone.sh
 
 CMD ["/entrypoint.sh"]
 
