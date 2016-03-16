@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 MAINTAINER Jaewoo Lee <continuse@icloud.com>
 
 # E.g. docker build .
-# E.g. docker build --build-arg DOCKERFILE_URL=https://github.com/ajayhn/openstack-controller-docker/tree/master/docker-files/kilo/controller   -f docker-files/kilo/controller/Dockerfile github.com/ajayhn/openstack-contro-docker
+# E.g. docker build --build-arg DOCKERFILE_URL=https://raw.githubusercontent.com/ajayhn/openstack-controller-docker/master/docker-files/kilo/controller   -f docker-files/kilo/controller/Dockerfile github.com/ajayhn/openstack-controller-docker
 
 ARG DOCKERFILE_URL=./
 
