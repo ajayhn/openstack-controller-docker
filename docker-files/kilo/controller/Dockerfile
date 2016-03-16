@@ -1,6 +1,7 @@
 FROM ubuntu:14.04
 MAINTAINER Jaewoo Lee <continuse@icloud.com>
 
+ARG DOCKERFILE_URL=./
 # Mysql Server
 ENV MYSQL_ROOT_PASSWORD openstack
 RUN { \
@@ -58,7 +59,7 @@ RUN apt-get -y install cinder-api cinder-scheduler python-cinderclient
 #VOLUME ["/data"]
 
 # MySQL
-COPY config/mysql/my.cnf /etc/mysql/my.cnf
+ADD ${DOCKERFILE_URL}/config/mysql/my.cnf /etc/mysql/my.cnf
 
 # WSGI for Keystone
 COPY config/wsgi-keystone.conf /etc/apache2/sites-available/wsgi-keystone.conf
