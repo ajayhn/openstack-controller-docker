@@ -1,8 +1,10 @@
 FROM ubuntu:14.04
 MAINTAINER Jaewoo Lee <continuse@icloud.com>
 
+# E.g. docker build .
+# E.g. docker build --build-arg DOCKERFILE_URL=https://github.com/ajayhn/openstack-controller-docker/tree/master/docker-files/kilo/controller   -f docker-files/kilo/controller/Dockerfile github.com/ajayhn/openstack-contro-docker
+
 ARG DOCKERFILE_URL=./
-ADD ${DOCKERFILE_URL}/config/mysql/my.cnf /etc/mysql/my.cnf
 
 # Mysql Server
 ENV MYSQL_ROOT_PASSWORD openstack
@@ -64,35 +66,35 @@ RUN apt-get -y install cinder-api cinder-scheduler python-cinderclient
 ADD ${DOCKERFILE_URL}/config/mysql/my.cnf /etc/mysql/my.cnf
 
 # WSGI for Keystone
-COPY config/wsgi-keystone.conf /etc/apache2/sites-available/wsgi-keystone.conf
-COPY config/keystone/policy.v3.json /etc/keystone/policy.v3.json
+ADD ${DOCKERFILE_URL}/config/wsgi-keystone.conf /etc/apache2/sites-available/wsgi-keystone.conf
+ADD ${DOCKERFILE_URL}/config/keystone/policy.v3.json /etc/keystone/policy.v3.json
 
 # Configuration File for Keystone Service
-COPY config/keystone/keystone.conf /etc/keystone/keystone.conf
+ADD ${DOCKERFILE_URL}/config/keystone/keystone.conf /etc/keystone/keystone.conf
 
 # Configuration File for Glance Service
-COPY config/glance/glance-api.conf /etc/glance/glance-api.conf
-COPY config/glance/glance-registry.conf /etc/glance/glance-registry.conf
+ADD ${DOCKERFILE_URL}/config/glance/glance-api.conf /etc/glance/glance-api.conf
+ADD ${DOCKERFILE_URL}/config/glance/glance-registry.conf /etc/glance/glance-registry.conf
 
 # Configuration File for Nova Service
-COPY config/nova/nova.conf /etc/nova/nova.conf
+ADD ${DOCKERFILE_URL}/config/nova/nova.conf /etc/nova/nova.conf
 
 # Configuration File for Heat Service
-COPY config/heat/heat.conf /etc/heat/heat.conf
+ADD ${DOCKERFILE_URL}/config/heat/heat.conf /etc/heat/heat.conf
 
 # Dashboard conf file
-COPY config/horizon/local_settings.py /etc/openstack-dashboard/local_settings.py
+ADD ${DOCKERFILE_URL}/config/horizon/local_settings.py /etc/openstack-dashboard/local_settings.py
 
 # Cinder conf file
-COPY config/cinder/cinder.conf /etc/cinder/cinder.conf
+ADD ${DOCKERFILE_URL}/config/cinder/cinder.conf /etc/cinder/cinder.conf
 
 RUN chown glance:glance /etc/glance/glance-api.conf \
   && chown glance:glance /etc/glance/glance-registry.conf \
   && chown nova:nova /etc/nova/nova.conf \
   && chown cinder:cinder /etc/cinder/cinder.conf
 
-COPY entrypoint.sh /entrypoint.sh
-COPY keystone.sh /keystone.sh
+ADD ${DOCKERFILE_URL}/entrypoint.sh /entrypoint.sh
+ADD ${DOCKERFILE_URL}/keystone.sh /keystone.sh
 
 CMD ["/entrypoint.sh"]
 
