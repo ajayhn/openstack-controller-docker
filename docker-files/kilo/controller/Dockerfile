@@ -67,6 +67,7 @@ ADD ${DOCKERFILE_URL}/config/mysql/my.cnf /etc/mysql/my.cnf
 
 # WSGI for Keystone
 ADD ${DOCKERFILE_URL}/config/wsgi-keystone.conf /etc/apache2/sites-available/wsgi-keystone.conf
+RUN chmod a+r /etc/apache2/sites-available/wsgi-keystone.conf
 ADD ${DOCKERFILE_URL}/config/keystone/policy.v3.json /etc/keystone/policy.v3.json
 
 # Configuration File for Keystone Service
@@ -78,6 +79,7 @@ ADD ${DOCKERFILE_URL}/config/glance/glance-registry.conf /etc/glance/glance-regi
 
 # Configuration File for Nova Service
 ADD ${DOCKERFILE_URL}/config/nova/nova.conf /etc/nova/nova.conf
+
 
 # Configuration File for Heat Service
 ADD ${DOCKERFILE_URL}/config/heat/heat.conf /etc/heat/heat.conf
@@ -91,7 +93,10 @@ ADD ${DOCKERFILE_URL}/config/cinder/cinder.conf /etc/cinder/cinder.conf
 RUN chown glance:glance /etc/glance/glance-api.conf \
   && chown glance:glance /etc/glance/glance-registry.conf \
   && chown nova:nova /etc/nova/nova.conf \
-  && chown cinder:cinder /etc/cinder/cinder.conf
+  && chown cinder:cinder /etc/cinder/cinder.conf \ 
+  && chown heat:heat /etc/heat/heat.conf \
+  && chown keystone:keystone /etc/keystone/keystone.conf \
+  && chown keystone:keystone /etc/keystone/policy.v3.json
 
 ADD ${DOCKERFILE_URL}/entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
