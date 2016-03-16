@@ -103,6 +103,36 @@ RUN chmod a+x /entrypoint.sh
 ADD ${DOCKERFILE_URL}/keystone.sh /keystone.sh
 RUN chmod a+x /keystone.sh
 
+ENV MYSQL_ROOT_PASSWORD openstack
+ENV RABBIT_PASS openstack
+ENV KEYSTONE_DBPASS openstack
+ENV GLANCE_DBPASS openstack
+ENV NOVA_DBPASS openstack
+ENV CINDER_DBPASS openstack
+ENV HEAT_DBPASS openstack
+ENV KEYSTONE_PASS openstack
+ENV GLANCE_PASS openstack
+ENV NOVA_PASS openstack
+ENV NEUTRON_PASS openstack
+ENV CINDER_PASS openstack
+ENV HEAT_PASS openstack
+
+ENV ADMIN_TENANT_NAME admin
+ENV ADMIN_TOKEN openstack
+ENV ADMIN_PASS openstack
+ENV DEMO_PASS openstack
+ENV REGION_NAME RegionOne
+ENV KEYSTONE_VERSION v3
+ENV POLICY_FILE /etc/keystone/policy.v3.json
+
+ENV KEYSTONE_HOST localhost
+ENV GLANCE_HOST localhost
+ENV NOVA_HOST localhost
+ENV CINDER_HOST localhost
+ENV HEAT_HOST localhost
+ENV CFN_HOST localhost
+ENV NEUTRON_HOST contrail-api
+
 CMD ["/entrypoint.sh"]
 
 EXPOSE 3306 35357 9292 5000 5672 8774 8776 6080 9696 80
